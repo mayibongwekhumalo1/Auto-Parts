@@ -19,6 +19,10 @@ export interface IOrder extends Document {
     zipCode: string;
     country: string;
   };
+  orderNotes?: string;
+  trackingNumber?: string;
+  estimatedDeliveryDate?: Date;
+  actualDeliveryDate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -89,6 +93,20 @@ const OrderSchema: Schema = new Schema({
       type: String,
       required: true
     }
+  },
+  orderNotes: {
+    type: String,
+    maxlength: [500, 'Order notes cannot be more than 500 characters']
+  },
+  trackingNumber: {
+    type: String,
+    trim: true
+  },
+  estimatedDeliveryDate: {
+    type: Date
+  },
+  actualDeliveryDate: {
+    type: Date
   }
 }, {
   timestamps: true
@@ -98,5 +116,7 @@ const OrderSchema: Schema = new Schema({
 OrderSchema.index({ user: 1, createdAt: -1 });
 OrderSchema.index({ status: 1 });
 OrderSchema.index({ paymentStatus: 1 });
+OrderSchema.index({ estimatedDeliveryDate: 1 });
+OrderSchema.index({ actualDeliveryDate: 1 });
 
 export default mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema);

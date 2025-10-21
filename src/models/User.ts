@@ -6,6 +6,11 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: 'customer' | 'admin';
+  totalOrders?: number;
+  totalSpent?: number;
+  lastOrderDate?: Date;
+  preferredCategories?: string[];
+  loyaltyTier?: 'bronze' | 'silver' | 'gold' | 'platinum';
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -38,6 +43,28 @@ const UserSchema: Schema = new Schema({
     type: String,
     enum: ['customer', 'admin'],
     default: 'customer'
+  },
+  totalOrders: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  totalSpent: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  lastOrderDate: {
+    type: Date
+  },
+  preferredCategories: [{
+    type: String,
+    trim: true
+  }],
+  loyaltyTier: {
+    type: String,
+    enum: ['bronze', 'silver', 'gold', 'platinum'],
+    default: 'bronze'
   }
 }, {
   timestamps: true

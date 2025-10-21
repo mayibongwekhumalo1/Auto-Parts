@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const brand = searchParams.get('brand');
     const search = searchParams.get('search');
     const featured = searchParams.get('featured') === 'true';
+    const sale = searchParams.get('sale') === 'true';
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = searchParams.get('sortOrder') === 'asc' ? 1 : -1;
 
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest) {
     if (category) filter.category = category;
     if (brand) filter.brand = brand;
     if (featured) filter.featured = true;
+    if (sale) filter.sale = true;
     if (search) {
       filter.$text = { $search: search };
     }
@@ -69,7 +71,7 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
 
     const body = await request.json();
-    const { name, description, price, category, brand, images, stock, featured } = body;
+    const { name, description, price, category, brand, images, stock, featured, sale } = body;
 
     // Validate required fields
     if (!name || !description || !price || !category || !brand || stock === undefined) {
@@ -87,7 +89,8 @@ export async function POST(request: NextRequest) {
       brand,
       images: images || [],
       stock,
-      featured: featured || false
+      featured: featured || false,
+      sale: sale || false
     });
 
     return NextResponse.json(product, { status: 201 });

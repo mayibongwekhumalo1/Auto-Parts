@@ -93,3 +93,88 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// PUT /api/admin/products/bulk-price-update - Bulk update product prices (Admin only)
+export async function PUT(request: NextRequest) {
+  try {
+    await connectToDatabase();
+
+    const userId = await getUserFromToken(request);
+
+    // Check if user is admin
+    const adminUser = await User.findById(userId);
+    if (!adminUser || adminUser.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const { productIds, percentage, type } = await request.json();
+
+    // Validate input
+    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+      return NextResponse.json(
+        { error: 'Please provide productIds array' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof percentage !== 'number' || percentage < -100 || percentage > 1000) {
+      return NextResponse.json(
+        { error: 'Please provide valid percentage (-100 to 1000)' },
+        { status: 400 }
+      );
+    }
+
+    if (!type || !['percentage', 'fixed'].includes(type)) {
+      return NextResponse.json(
+        { error: 'Please provide valid type (percentage or fixed)' },
+        { status: 400 }
+      );
+    }
+
+    // Get products to update
+    const products = await Product.find({ _id: { $in: productIds } });
+
+    if (products.length === 0) {
+      return NextResponse.json(
+        { error: 'No products found' },
+        { status: 404 }
+      );
+    }
+
+    // Update prices
+    const updatePromises = products.map(async (product) => {
+      let newPrice: number;
+
+      if (type === 'percentage') {
+        newPrice = product.price * (1 + percentage / 100);
+      } else {
+        newPrice = product.price + percentage;
+      }
+
+      // Ensure price doesn't go below 0
+      newPrice = Math.max(0, newPrice);
+
+      return Product.findByIdAndUpdate(
+        product._id,
+        { price: newPrice, updatedAt: new Date() },
+        { new: true }
+      );
+    });
+
+    const updatedProducts = await Promise.all(updatePromises);
+
+    return NextResponse.json({
+      message: `Updated prices for ${updatedProducts.length} products`,
+      updatedProducts
+    });
+  } catch (error) {
+    console.error('Error updating product prices:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

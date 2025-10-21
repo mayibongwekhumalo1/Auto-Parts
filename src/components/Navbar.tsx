@@ -1,8 +1,13 @@
+
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import { Menu, ShoppingCart } from "lucide-react";
+import { useAuth } from "./hooks";
 
 export default function Navbar() {
+  const user = useAuth();
   return (
     <header className="border-b border-zinc-800">
       <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
@@ -19,7 +24,11 @@ export default function Navbar() {
           <Link href="/gallery" className="hover:text-red-500">Gallery</Link>
           <Link href="/shortcode" className="hover:text-red-500">Shortcode</Link>
           <Link href="/news" className="hover:text-red-500">News</Link>
-          <Link href="/pages" className="hover:text-red-500">Pages</Link>
+          {user && user.role === 'admin' ? (
+            <Link href="/admin" className="hover:text-red-500">Dashboard</Link>
+          ) : (
+            <Link href="/pages" className="hover:text-red-500">Pages</Link>
+          )}
           <Link href="/buy-car" className="hover:text-red-500">Buy Car</Link>
         </nav>
 
@@ -28,7 +37,13 @@ export default function Navbar() {
             <ShoppingCart size={16} />
             Cart
           </Link>
-          <Link href="/login" className="text-sm px-3 py-2 border border-zinc-700 rounded-md">Login</Link>
+          {user ? (
+            <div className="text-sm px-3 py-2 border border-zinc-700 rounded-md bg-zinc-800 text-white">
+              {user.email.charAt(0).toUpperCase()}
+            </div>
+          ) : (
+            <Link href="/login" className="text-sm px-3 py-2 border border-zinc-700 rounded-md">Login</Link>
+          )}
         </div>
       </div>
     </header>

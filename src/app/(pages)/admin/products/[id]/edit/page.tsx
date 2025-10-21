@@ -1,12 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CldUploadWidget } from 'next-cloudinary';
-import { ArrowLeft, Plus, Camera, Save, X } from 'lucide-react';
+import { ArrowLeft, Edit, Camera, Save, X } from 'lucide-react';
 
-export default function AddProductPage() {
+interface Product {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  brand: string;
+  stock: number;
+  featured: boolean;
+  images: string[];
+}
+
+export default function EditProductPage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -19,9 +31,53 @@ export default function AddProductPage() {
   });
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const router = useRouter();
+  const params = useParams();
+  const productId = params.id as string;
+
+  useEffect(() => {
+    fetchProduct();
+  }, [productId]);
+
+  const fetchProduct = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch(`/api/admin/products/${productId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const product: Product = await response.json();
+        setFormData({
+          name: product.name,
+          description: product.description,
+          price: product.price.toString(),
+          category: product.category,
+          brand: product.brand || '',
+          stock: product.stock.toString(),
+          featured: product.featured,
+          images: product.images || []
+        });
+        setUploadedImages(product.images || []);
+      } else {
+        setError('Failed to fetch product');
+      }
+    } catch (error) {
+      setError('Failed to fetch product');
+    } finally {
+      setFetchLoading(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -46,8 +102,8 @@ export default function AddProductPage() {
         return;
       }
 
-      const response = await fetch('/api/admin/products', {
-        method: 'POST',
+      const response = await fetch(`/api/admin/products/${productId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -61,31 +117,28 @@ export default function AddProductPage() {
       });
 
       if (response.ok) {
-        setSuccess('Product added successfully!');
-        setFormData({
-          name: '',
-          description: '',
-          price: '',
-          category: '',
-          brand: '',
-          stock: '',
-          featured: false,
-          images: []
-        });
-        setUploadedImages([]);
+        setSuccess('Product updated successfully!');
         setTimeout(() => {
           router.push('/admin');
         }, 2000);
       } else {
         const errorData = await response.json();
-        setError(errorData.error || 'Failed to add product');
+        setError(errorData.error || 'Failed to update product');
       }
     } catch (error) {
-      setError('Failed to add product');
+      setError('Failed to update product');
     } finally {
       setLoading(false);
     }
   };
+
+  if (fetchLoading) {
+    return (
+      <div className="min-h-screen bg-[#0b0b0b] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0b0b0b] text-white py-8">
@@ -101,12 +154,12 @@ export default function AddProductPage() {
         </div>
 
         <div className="bg-[#1a1a1a] shadow-2xl rounded-2xl border border-gray-800 overflow-hidden">
-          <div className="px-8 py-6 bg-gradient-to-r from-green-600 to-teal-600">
+          <div className="px-8 py-6 bg-gradient-to-r from-orange-500 to-red-500">
             <h1 className="text-2xl font-bold text-white flex items-center">
-              <Plus className="mr-3 w-6 h-6" />
-              Add New Product
+              <Edit className="mr-3 w-6 h-6" />
+              Edit Product
             </h1>
-            <p className="text-green-100 mt-1">Create a new auto part for your inventory</p>
+            <p className="text-orange-100 mt-1">Update product information</p>
           </div>
 
           <div className="p-8">
@@ -321,10 +374,10 @@ export default function AddProductPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg hover:from-green-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center"
+                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center"
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  {loading ? 'Adding Product...' : 'Add Product'}
+                  {loading ? 'Updating Product...' : 'Update Product'}
                 </button>
               </div>
             </form>

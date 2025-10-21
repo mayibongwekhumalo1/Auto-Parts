@@ -4,11 +4,14 @@ export interface IProduct extends Document {
   name: string;
   description: string;
   price: number;
+  costPrice?: number;
+  supplier?: string;
   category: string;
   brand: string;
   images: string[];
   stock: number;
   featured: boolean;
+  sale: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +32,14 @@ const ProductSchema: Schema = new Schema({
     type: Number,
     required: [true, 'Please add a price'],
     min: [0, 'Price must be positive']
+  },
+  costPrice: {
+    type: Number,
+    min: [0, 'Cost price must be positive']
+  },
+  supplier: {
+    type: String,
+    trim: true
   },
   category: {
     type: String,
@@ -53,6 +64,10 @@ const ProductSchema: Schema = new Schema({
   featured: {
     type: Boolean,
     default: false
+  },
+  sale: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
@@ -63,5 +78,6 @@ ProductSchema.index({ name: 'text', description: 'text' });
 ProductSchema.index({ category: 1 });
 ProductSchema.index({ brand: 1 });
 ProductSchema.index({ price: 1 });
+ProductSchema.index({ supplier: 1 });
 
 export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);

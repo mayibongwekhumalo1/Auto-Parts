@@ -161,6 +161,24 @@ export default function NewsPage() {
           </div>
         </section>
       </div>
+
+      {/* Newsletter Signup */}
+      <section className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center">
+        <h2 className="text-2xl font-bold mb-4">Stay Informed</h2>
+        <p className="text-zinc-300 mb-6 max-w-2xl mx-auto">
+          Subscribe to our newsletter to receive the latest automotive news, maintenance tips, and exclusive offers.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+          <input
+            type="email"
+            placeholder="Enter your email"
+            className="flex-1 px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-md text-white placeholder-zinc-400 focus:outline-none focus:border-red-600"
+          />
+          <button className="bg-red-700 hover:bg-red-800 px-6 py-3 rounded-md font-semibold whitespace-nowrap">
+            Subscribe
+          </button>
+        </div>
+      </section>
     </main>
   );
 }
