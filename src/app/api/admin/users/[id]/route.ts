@@ -18,7 +18,7 @@ async function getUserFromToken(request: NextRequest) {
 }
 
 // PUT /api/admin/users/[id] - Update user role (Admin only)
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectToDatabase();
 
@@ -42,8 +42,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       );
     }
 
+    const resolvedParams = await params;
     const user = await User.findByIdAndUpdate(
-      params.id,
+      resolvedParams.id,
       { role },
       { new: true }
     ).select('-password');

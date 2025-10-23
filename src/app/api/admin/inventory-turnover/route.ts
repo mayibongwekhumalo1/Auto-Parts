@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/utils/database';
-import Product from '@/models/Product';
+import Product, { IProduct } from '@/models/Product';
 import Order from '@/models/Order';
 
 export async function GET(request: NextRequest) {
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       .lean();
 
     // Calculate turnover metrics
-    const turnoverData = products.map(product => {
+    const turnoverData = products.map((product: IProduct) => {
       const sales = salesData.find(s => s._id.toString() === product._id.toString());
       const unitsSold = sales?.totalSold || 0;
       const averageInventory = product.stock; // Simplified - could be more complex

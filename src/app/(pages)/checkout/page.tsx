@@ -139,96 +139,96 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#0b0b0b] text-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
+        <h1 className="text-3xl font-bold text-white mb-8">Checkout</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Order Summary */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Order Summary</h2>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-2xl p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Order Summary</h2>
             <div className="space-y-4">
               {cart.items.map((item, index) => (
                 <div key={index} className="flex justify-between items-center">
                   <div>
-                    <p className="font-medium text-gray-900">{item.name}</p>
-                    <p className="text-gray-600">Quantity: {item.quantity}</p>
+                    <p className="font-medium text-white">{item.name}</p>
+                    <p className="text-zinc-400">Quantity: {item.quantity}</p>
                   </div>
-                  <p className="font-medium text-gray-900">${(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="font-medium text-white">${(item.price * item.quantity).toFixed(2)}</p>
                 </div>
               ))}
             </div>
-            <div className="border-t border-gray-200 mt-4 pt-4">
+            <div className="border-t border-zinc-700 mt-4 pt-4">
               <div className="flex justify-between items-center text-lg font-bold">
-                <span>Total:</span>
-                <span>${cart.totalAmount.toFixed(2)}</span>
+                <span className="text-white">Total:</span>
+                <span className="text-red-500">${cart.totalAmount.toFixed(2)}</span>
               </div>
             </div>
           </div>
 
           {/* Shipping & Payment Form */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Shipping Information</h2>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-2xl p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Shipping Information</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+                <label className="block text-sm font-medium text-zinc-300 mb-1">Street Address</label>
                 <input
                   type="text"
                   required
                   value={shippingAddress.street}
                   onChange={(e) => setShippingAddress({...shippingAddress, street: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-zinc-600 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent bg-zinc-800 text-white"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1">City</label>
                   <input
                     type="text"
                     required
                     value={shippingAddress.city}
                     onChange={(e) => setShippingAddress({...shippingAddress, city: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-zinc-600 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent bg-zinc-800 text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1">State</label>
                   <input
                     type="text"
                     required
                     value={shippingAddress.state}
                     onChange={(e) => setShippingAddress({...shippingAddress, state: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-zinc-600 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent bg-zinc-800 text-white"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1">ZIP Code</label>
                   <input
                     type="text"
                     required
                     value={shippingAddress.zipCode}
                     onChange={(e) => setShippingAddress({...shippingAddress, zipCode: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-zinc-600 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent bg-zinc-800 text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                  <label className="block text-sm font-medium text-zinc-300 mb-1">Country</label>
                   <input
                     type="text"
                     required
                     value={shippingAddress.country}
                     onChange={(e) => setShippingAddress({...shippingAddress, country: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-zinc-600 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent bg-zinc-800 text-white"
                   />
                 </div>
               </div>
 
               <div className="mt-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Payment Information</h3>
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <p className="text-sm text-gray-600">
+                <h3 className="text-lg font-medium text-white mb-4">Payment Information</h3>
+                <div className="bg-zinc-800 border border-zinc-700 p-4 rounded-md">
+                  <p className="text-sm text-zinc-400">
                     Payment processing will be implemented with Stripe Elements in production.
                     For this MVP, payment confirmation is simulated.
                   </p>
@@ -238,7 +238,7 @@ export default function CheckoutPage() {
               <button
                 type="submit"
                 disabled={processing}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium mt-6"
+                className="w-full bg-red-700 text-white py-3 px-4 rounded-lg hover:bg-red-600 disabled:bg-zinc-600 disabled:cursor-not-allowed font-medium mt-6 transition-colors"
               >
                 {processing ? 'Processing...' : `Pay $${cart.totalAmount.toFixed(2)}`}
               </button>

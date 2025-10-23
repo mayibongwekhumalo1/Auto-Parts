@@ -1,17 +1,23 @@
 "use client"
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, Suspense } from "react";
 import { Product } from "../components/types";
 import { useCountdown } from "../components/hooks";
-import Hero from "../components/Hero";
-import WhyChooseUs from "../components/WhyChooseUs";
-import DealOfTheDay from "../components/DealOfTheDay";
-import PromoBanners from "../components/PromoBanners";
-import CategoriesGrid from "../components/CategoriesGrid";
-import FilterTabs from "../components/FilterTabs";
-import FilteredProducts from "../components/FilteredProducts";
-import Testimonials from "../components/Testimonials";
-import Newsletter from "../components/Newsletter";
+import { useApiCache } from "../hooks/useApiCache";
+import dynamic from "next/dynamic";
+
+// Lazy load components for better performance
+const Hero = dynamic(() => import("../components/Hero"), {
+  loading: () => <div className="h-screen bg-[#0b0b0b] animate-pulse"></div>
+});
+const WhyChooseUs = dynamic(() => import("../components/WhyChooseUs"));
+const DealOfTheDay = dynamic(() => import("../components/DealOfTheDay"));
+const PromoBanners = dynamic(() => import("../components/PromoBanners"));
+const CategoriesGrid = dynamic(() => import("../components/CategoriesGrid"));
+const FilterTabs = dynamic(() => import("../components/FilterTabs"));
+const FilteredProducts = dynamic(() => import("../components/FilteredProducts"));
+const Testimonials = dynamic(() => import("../components/Testimonials"));
+const Newsletter = dynamic(() => import("../components/Newsletter"));
 
 export default function Page() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -26,32 +32,36 @@ export default function Page() {
     observerRefs.current[index] = el;
   };
 
+  // Use cached API calls for better performance
+  const { data: featuredProducts, loading: productsLoading } = useApiCache(
+    'featured-products',
+    async () => {
+      const response = await fetch('/api/products?limit=4&featured=true');
+      const data = await response.json();
+      return data.products || [];
+    },
+    { ttl: 10 * 60 * 1000 } // 10 minutes cache
+  );
+
+  const { data: productCategories } = useApiCache(
+    'product-categories',
+    async () => {
+      const response = await fetch('/api/products?distinct=categories');
+      const data = await response.json();
+      return data.categories || [];
+    },
+    { ttl: 30 * 60 * 1000 } // 30 minutes cache
+  );
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch('/api/products?limit=4&featured=true');
-        const data = await response.json();
-        setProducts(data.products || []);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch('/api/products?distinct=categories');
-        const data = await response.json();
-        setCategories(data.categories || []);
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-      }
-    };
-
-    fetchProducts();
-    fetchCategories();
-  }, []);
+    if (featuredProducts) {
+      setProducts(featuredProducts);
+    }
+    if (productCategories) {
+      setCategories(productCategories);
+    }
+    setLoading(productsLoading);
+  }, [featuredProducts, productCategories, productsLoading]);
 
   useEffect(() => {
     const fetchGridProducts = async () => {
@@ -121,37 +131,55 @@ export default function Page() {
 
   return (
     <main className="min-h-screen bg-[#0b0b0b] text-white antialiased">
-      <Hero />
+      <Suspense fallback={<div className="h-screen bg-[#0b0b0b] animate-pulse"></div>}>
+        <Hero />
+      </Suspense>
 
-      <WhyChooseUs />
+      <Suspense fallback={<div className="h-32 bg-[#0b0b0b] animate-pulse"></div>}>
+        <WhyChooseUs />
+      </Suspense>
 
-      <DealOfTheDay products={products} observerRef={setObserverRef} />
+      <Suspense fallback={<div className="h-64 bg-[#0b0b0b] animate-pulse"></div>}>
+        <DealOfTheDay products={products} observerRef={setObserverRef} />
+      </Suspense>
 
-      <PromoBanners />
+      <Suspense fallback={<div className="h-32 bg-[#0b0b0b] animate-pulse"></div>}>
+        <PromoBanners />
+      </Suspense>
 
-      <CategoriesGrid
-        categories={categories}
-        selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
-        gridProducts={gridProducts}
-        observerRef={setObserverRef}
-      />
+      <Suspense fallback={<div className="h-96 bg-[#0b0b0b] animate-pulse"></div>}>
+        <CategoriesGrid
+          categories={categories}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          gridProducts={gridProducts}
+          observerRef={setObserverRef}
+        />
+      </Suspense>
 
-      <FilterTabs
-        selectedFilter={selectedFilter}
-        setSelectedFilter={setSelectedFilter}
-        observerRef={setObserverRef}
-      />
+      <Suspense fallback={<div className="h-16 bg-[#0b0b0b] animate-pulse"></div>}>
+        <FilterTabs
+          selectedFilter={selectedFilter}
+          setSelectedFilter={setSelectedFilter}
+          observerRef={setObserverRef}
+        />
+      </Suspense>
 
-      <FilteredProducts
-        filteredProducts={filteredProducts}
-        selectedFilter={selectedFilter}
-        observerRef={setObserverRef}
-      />
+      <Suspense fallback={<div className="h-96 bg-[#0b0b0b] animate-pulse"></div>}>
+        <FilteredProducts
+          filteredProducts={filteredProducts}
+          selectedFilter={selectedFilter}
+          observerRef={setObserverRef}
+        />
+      </Suspense>
 
-      <Testimonials observerRef={setObserverRef} />
+      <Suspense fallback={<div className="h-64 bg-[#0b0b0b] animate-pulse"></div>}>
+        <Testimonials observerRef={setObserverRef} />
+      </Suspense>
 
-      <Newsletter />
+      <Suspense fallback={<div className="h-48 bg-[#0b0b0b] animate-pulse"></div>}>
+        <Newsletter />
+      </Suspense>
     </main>
   );
 }
