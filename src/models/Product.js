@@ -1,22 +1,6 @@
-import mongoose, { Document, Schema } from 'mongoose';
+const mongoose = require('mongoose');
 
-export interface IProduct extends Document {
-  name: string;
-  description: string;
-  price: number;
-  costPrice?: number;
-  supplier?: string;
-  category: string;
-  brand: string;
-  images: string[];
-  stock: number;
-  featured: boolean;
-  sale: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const ProductSchema: Schema = new Schema({
+const ProductSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, 'Please add a product name'],
@@ -86,4 +70,4 @@ ProductSchema.index({ createdAt: -1 });
 ProductSchema.index({ category: 1, featured: 1, stock: 1 }); // Compound index for homepage queries
 ProductSchema.index({ brand: 1, category: 1 }); // Compound index for filtering
 
-export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);
+module.exports = mongoose.models.Product || mongoose.model('Product', ProductSchema);

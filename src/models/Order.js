@@ -1,0 +1,95 @@
+const mongoose = require('mongoose');
+
+const OrderSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  items: [{
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    },
+    price: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1
+    }
+  }],
+  totalAmount: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+    default: 'pending'
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'failed', 'refunded'],
+    default: 'pending'
+  },
+  paymentIntentId: {
+    type: String
+  },
+  shippingAddress: {
+    street: {
+      type: String,
+      required: true
+    },
+    city: {
+      type: String,
+      required: true
+    },
+    state: {
+      type: String,
+      required: true
+    },
+    zipCode: {
+      type: String,
+      required: true
+    },
+    country: {
+      type: String,
+      required: true
+    }
+  },
+  orderNotes: {
+    type: String,
+    maxlength: [500, 'Order notes cannot be more than 500 characters']
+  },
+  trackingNumber: {
+    type: String,
+    trim: true
+  },
+  estimatedDeliveryDate: {
+    type: Date
+  },
+  actualDeliveryDate: {
+    type: Date
+  }
+}, {
+  timestamps: true
+});
+
+// Index for efficient queries
+OrderSchema.index({ user: 1, createdAt: -1 });
+OrderSchema.index({ status: 1 });
+OrderSchema.index({ paymentStatus: 1 });
+OrderSchema.index({ estimatedDeliveryDate: 1 });
+OrderSchema.index({ actualDeliveryDate: 1 });
+
+module.exports = mongoose.models.Order || mongoose.model('Order', OrderSchema);

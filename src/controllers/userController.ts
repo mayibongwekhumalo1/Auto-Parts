@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import connectToDatabase from '../utils/database';
 import User from '../models/User';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+import { setAuthCookie, generateToken, clearAuthCookie } from '../utils/auth';
 
 // POST /api/auth/register - Register a new user
 export async function register(request: NextRequest) {
@@ -58,12 +56,13 @@ export async function register(request: NextRequest) {
       role
     });
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Generate JWT token and set httpOnly cookie
+    const token = generateToken({
+      _id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+      role: user.role
+    });
 
     // Remove password from response
     const userResponse = {
@@ -74,10 +73,12 @@ export async function register(request: NextRequest) {
       createdAt: user.createdAt
     };
 
-    return NextResponse.json({
-      user: userResponse,
-      token
+    const response = NextResponse.json({
+      user: userResponse
     }, { status: 201 });
+
+    setAuthCookie(response, token);
+    return response;
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(
@@ -120,12 +121,13 @@ export async function login(request: NextRequest) {
       );
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Generate JWT token and set httpOnly cookie
+    const token = generateToken({
+      _id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+      role: user.role
+    });
 
     // Remove password from response
     const userResponse = {
@@ -136,10 +138,12 @@ export async function login(request: NextRequest) {
       createdAt: user.createdAt
     };
 
-    return NextResponse.json({
-      user: userResponse,
-      token
+    const response = NextResponse.json({
+      user: userResponse
     });
+
+    setAuthCookie(response, token);
+    return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
@@ -154,44 +158,42 @@ export async function getProfile(request: NextRequest) {
   try {
     await connectToDatabase();
 
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Get user from httpOnly cookie instead of Authorization header
+    const user = await User.findById(request.cookies.get('auth_token')?.value);
+
+    if (!user) {
       return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
+        { error: 'User not found' },
+        { status: 404 }
       );
     }
 
-    const token = authHeader.substring(7);
+    const userResponse = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt
+    };
 
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-      const user = await User.findById(decoded.userId);
-
-      if (!user) {
-        return NextResponse.json(
-          { error: 'User not found' },
-          { status: 404 }
-        );
-      }
-
-      const userResponse = {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        createdAt: user.createdAt
-      };
-
-      return NextResponse.json({ user: userResponse });
-    } catch (jwtError) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
+    return NextResponse.json({ user: userResponse });
   } catch (error) {
     console.error('Profile error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/auth/logout - Logout user
+export async function logout(request: NextRequest) {
+  try {
+    const response = NextResponse.json({ message: 'Logged out successfully' });
+    clearAuthCookie(response);
+    return response;
+  } catch (error) {
+    console.error('Logout error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

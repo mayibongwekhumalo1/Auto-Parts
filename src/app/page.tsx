@@ -32,36 +32,25 @@ export default function Page() {
     observerRefs.current[index] = el;
   };
 
-  // Use cached API calls for better performance
-  const { data: featuredProducts, loading: productsLoading } = useApiCache(
-    'featured-products',
+  // Use combined homepage API call for better performance
+  const { data: homepageData, loading: homepageLoading } = useApiCache(
+    'homepage-data',
     async () => {
-      const response = await fetch('/api/products?limit=4&featured=true');
+      const response = await fetch('/api/homepage');
       const data = await response.json();
-      return data.products || [];
+      return data;
     },
     { ttl: 10 * 60 * 1000 } // 10 minutes cache
   );
 
-  const { data: productCategories } = useApiCache(
-    'product-categories',
-    async () => {
-      const response = await fetch('/api/products?distinct=categories');
-      const data = await response.json();
-      return data.categories || [];
-    },
-    { ttl: 30 * 60 * 1000 } // 30 minutes cache
-  );
-
   useEffect(() => {
-    if (featuredProducts) {
-      setProducts(featuredProducts);
+    if (homepageData) {
+      setProducts(homepageData.featured || []);
+      setCategories(homepageData.categories || []);
+      setGridProducts(homepageData.trending || []);
     }
-    if (productCategories) {
-      setCategories(productCategories);
-    }
-    setLoading(productsLoading);
-  }, [featuredProducts, productCategories, productsLoading]);
+    setLoading(homepageLoading);
+  }, [homepageData, homepageLoading]);
 
   useEffect(() => {
     const fetchGridProducts = async () => {
@@ -74,11 +63,18 @@ export default function Page() {
         setGridProducts(data.products || []);
       } catch (error) {
         console.error('Error fetching grid products:', error);
+        // Set empty array on error to prevent crashes
+        setGridProducts([]);
       }
     };
 
-    fetchGridProducts();
-  }, [selectedCategory]);
+    // Only fetch if we don't already have data from homepage API
+    if (!selectedCategory && homepageData?.trending) {
+      setGridProducts(homepageData.trending);
+    } else {
+      fetchGridProducts();
+    }
+  }, [selectedCategory, homepageData]);
 
   useEffect(() => {
     const fetchFilteredProducts = async () => {

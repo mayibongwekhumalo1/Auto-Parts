@@ -1,19 +1,11 @@
-import { NextRequest } from 'next/server';
-import { Server as ServerIO } from 'socket.io';
-import { Server as NetServer } from 'http';
-import connectToDatabase from '../../../utils/database';
-import Product from '../../../models/Product';
-import Order from '../../../models/Order';
-import User from '../../../models/User';
+const ServerIO = require('socket.io').Server;
+const NetServer = require('http').Server;
+const connectToDatabase = require('../../../utils/database');
+const Product = require('../../../models/Product');
+const Order = require('../../../models/Order');
+const User = require('../../../models/User');
 
-export async function GET(request: NextRequest) {
-  // Socket.IO is disabled for Vercel deployment
-  // Vercel doesn't support WebSocket connections in serverless functions
-  return new Response('Socket.IO disabled for Vercel deployment', { status: 200 });
-}
-
-// Socket.IO server setup (this would typically be in server.js or custom server)
-export const initSocketServer = (server: NetServer) => {
+const initSocketServer = (server) => {
   const io = new ServerIO(server, {
     path: '/api/socket',
     cors: {
@@ -242,3 +234,5 @@ async function getDashboardData() {
     };
   }
 }
+
+module.exports = { initSocketServer };

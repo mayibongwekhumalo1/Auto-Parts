@@ -1,22 +1,7 @@
-import mongoose, { Document, Schema } from 'mongoose';
-import bcrypt from 'bcryptjs';
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
-export interface IUser extends Document {
-  name: string;
-  email: string;
-  password: string;
-  role: 'customer' | 'admin';
-  totalOrders?: number;
-  totalSpent?: number;
-  lastOrderDate?: Date;
-  preferredCategories?: string[];
-  loyaltyTier?: 'bronze' | 'silver' | 'gold' | 'platinum';
-  createdAt: Date;
-  updatedAt: Date;
-  comparePassword(candidatePassword: string): Promise<boolean>;
-}
-
-const UserSchema: Schema = new Schema({
+const UserSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, 'Please add a name'],
@@ -77,7 +62,7 @@ UserSchema.pre('save', async function(next) {
   }
 
   const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password as string, salt);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Indexes for performance
@@ -87,8 +72,8 @@ UserSchema.index({ createdAt: -1 });
 UserSchema.index({ totalOrders: -1, totalSpent: -1 }); // For loyalty program queries
 
 // Sign JWT and return
-UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+UserSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+module.exports = mongoose.models.User || mongoose.model('User', UserSchema);

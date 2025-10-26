@@ -258,7 +258,11 @@ export default function AddProductPage() {
                   <div className="space-y-4">
                     {process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ? (
                       <CldUploadWidget
-                        uploadPreset="auto_parts_images"
+                        options={{
+                          cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+                          folder: 'auto_parts',
+                          resourceType: 'image'
+                        }}
                         onSuccess={(result: any) => {
                           if (result?.info?.secure_url) {
                             setUploadedImages(prev => [...prev, result.info.secure_url]);

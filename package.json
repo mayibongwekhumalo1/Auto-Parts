@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -13,6 +13,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/mongoose": "^5.11.96",
+    "@types/nodemailer": "^7.0.3",
     "algoliasearch": "^5.41.0",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.8.0",
@@ -21,6 +22,7 @@
     "mongoose": "^8.19.1",
     "next": "15.5.5",
     "next-cloudinary": "^6.16.0",
+    "nodemailer": "^7.0.10",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-icons": "^5.5.0",

@@ -5,6 +5,8 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import PerformanceMonitor from "../components/PerformanceMonitor";
 import PWARegister from "../components/PWARegister";
+import ScrollToTop from "../components/ScrollToTop";
+import ErrorBoundary from "../components/ErrorBoundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,13 +55,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
       >
-        <PWARegister />
-        <Navbar />
-        <main className="flex-grow">
-          {children}
-        </main>
-        <Footer />
-        <PerformanceMonitor />
+        <ErrorBoundary>
+          <PWARegister />
+          <Navbar />
+          <main className="flex-grow">
+            {children}
+          </main>
+          <Footer />
+          <PerformanceMonitor />
+          <ScrollToTop />
+        </ErrorBoundary>
       </body>
     </html>
   );

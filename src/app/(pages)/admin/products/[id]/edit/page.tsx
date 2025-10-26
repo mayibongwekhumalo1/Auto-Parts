@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { CldUploadWidget } from 'next-cloudinary';
 import { ArrowLeft, Edit, Camera, Save, X } from 'lucide-react';
 
@@ -343,16 +344,18 @@ export default function EditProductPage() {
                     {uploadedImages.length > 0 && (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {uploadedImages.map((url, index) => (
-                          <div key={index} className="relative">
-                            <img
+                          <div key={index} className="relative w-full h-24 border border-gray-600 rounded-lg overflow-hidden">
+                            <Image
                               src={url}
                               alt={`Product image ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg border border-gray-600"
+                              fill
+                              className="object-cover rounded-lg"
+                              sizes="(max-width: 768px) 50vw, 25vw"
                             />
                             <button
                               type="button"
                               onClick={() => setUploadedImages(prev => prev.filter((_, i) => i !== index))}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors z-10"
                             >
                               <X className="w-3 h-3" />
                             </button>

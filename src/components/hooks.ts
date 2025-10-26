@@ -19,18 +19,34 @@ export function useCountdown(targetDate: Date) {
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
+    const checkAuth = async () => {
+      try {
+        // Check for user data in localStorage (for backward compatibility)
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
           setUser(JSON.parse(storedUser));
-        } catch {
-          setUser(null);
+        } else {
+          // Try to get user from API (checks httpOnly cookie)
+          const response = await fetch('/api/auth/profile');
+          if (response.ok) {
+            const data = await response.json();
+            setUser(data.user);
+            // Update localStorage for client-side access
+            localStorage.setItem('user', JSON.stringify(data.user));
+          } else {
+            setUser(null);
+            localStorage.removeItem('user');
+          }
         }
-      } else {
+      } catch (error) {
+        console.error('Auth check failed:', error);
         setUser(null);
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
       }
     };
 
