@@ -19,7 +19,7 @@ async function getUserFromToken(request: NextRequest) {
 }
 
 // PUT /api/admin/products/[id] - Update product (Admin only)
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectToDatabase();
 
@@ -36,8 +36,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     const { name, description, price, stock, category, featured, images } = await request.json();
 
+    const resolvedParams = await params;
     const product = await Product.findByIdAndUpdate(
-      params.id,
+      resolvedParams.id,
       {
         name,
         description,
@@ -68,7 +69,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/admin/products/[id] - Delete product (Admin only)
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectToDatabase();
 
@@ -83,7 +84,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       );
     }
 
-    const product = await Product.findByIdAndDelete(params.id);
+    const resolvedParams = await params;
+    const product = await Product.findByIdAndDelete(resolvedParams.id);
 
     if (!product) {
       return NextResponse.json(

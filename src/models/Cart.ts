@@ -57,12 +57,14 @@ const CartSchema: Schema = new Schema({
 });
 
 // Calculate total amount before saving
-CartSchema.pre('save', function(next) {
-  this.totalAmount = this.items.reduce((total, item) => {
-    return total + (item.price * item.quantity);
+CartSchema.pre('save', function(this: ICart, next: Function) {
+  const total = this.items.reduce((sum: number, item: { price: number; quantity: number }) => {
+    return sum + (item.price * item.quantity);
   }, 0);
+  this.totalAmount = total;
   next();
 });
+
 
 // Index for efficient queries
 CartSchema.index({ user: 1 });

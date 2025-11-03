@@ -21,7 +21,15 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build filter object
-    const filter: any = {};
+    interface ProductFilter {
+      category?: string;
+      brand?: string;
+      featured?: boolean;
+      sale?: boolean;
+      $text?: { $search: string };
+    }
+
+    const filter: ProductFilter = {};
     if (category) filter.category = category;
     if (brand) filter.brand = brand;
     if (featured) filter.featured = true;
@@ -40,6 +48,7 @@ export async function GET(request: NextRequest) {
       .sort({ [sortBy]: sortOrder })
       .skip(skip)
       .limit(limit)
+      .select('name description price images stock category brand featured sale') // Only select needed fields
       .lean();
 
     const total = await Product.countDocuments(filter);

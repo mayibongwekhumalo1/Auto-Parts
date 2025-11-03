@@ -8,7 +8,7 @@ import Stripe from 'stripe';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
-const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' });
+const stripe = new Stripe(STRIPE_SECRET_KEY);
 
 // Helper function to get user from token
 async function getUserFromToken(request: NextRequest) {
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     // Check stock availability
     for (const item of cart.items) {
-      const product = item.product as any;
+      const product = item.product as { stock: number; name: string };
       if (product.stock < item.quantity) {
         return NextResponse.json(
           { error: `Insufficient stock for ${product.name}` },
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Create order
-    const orderItems = cart.items.map(item => ({
+    const orderItems = cart.items.map((item: any) => ({
       product: item.product,
       name: item.name,
       price: item.price,
@@ -146,7 +146,8 @@ export async function PUT(request: NextRequest) {
     }
 
     // Find user to check if admin
-    const user = await require('../models/User').default.findById(userId);
+    const User = (await import('../models/User')).default;
+    const user = await User.findById(userId);
     if (!user || user.role !== 'admin') {
       return NextResponse.json(
         { error: 'Admin access required' },

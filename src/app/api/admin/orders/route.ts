@@ -1,3 +1,5 @@
+"use client"
+
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import connectToDatabase from '@/utils/database';
@@ -57,6 +59,7 @@ export async function PUT(request: NextRequest) {
     const userId = await getUserFromToken(request);
 
     // Check if user is admin
+    
     const adminUser = await User.findById(userId);
     if (!adminUser || adminUser.role !== 'admin') {
       return NextResponse.json(

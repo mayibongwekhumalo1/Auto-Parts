@@ -13,7 +13,9 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/mongoose": "^5.11.96",
+    "algoliasearch": "^5.41.0",
     "bcryptjs": "^3.0.2",
+    "cloudinary": "^2.8.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.545.0",
     "mongoose": "^8.19.1",
@@ -23,6 +25,8 @@
     "react-dom": "19.1.0",
     "react-icons": "^5.5.0",
     "recharts": "^3.2.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "stripe": "^19.1.0"
   },
   "devDependencies": {
