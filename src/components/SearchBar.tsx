@@ -47,12 +47,16 @@ export default function SearchBar({
       if (query.length >= 2) {
         setIsLoading(true);
         try {
-          const { hits } = await searchClient.search(query, {
-            indexName: ALGOLIA_INDEX_NAME,
-            hitsPerPage: 8,
-            attributesToHighlight: ['name', 'description', 'category', 'brand'],
-            attributesToSnippet: ['description:50']
+          const response = await searchClient.search({
+            requests: [{
+              indexName: ALGOLIA_INDEX_NAME,
+              query,
+              hitsPerPage: 8,
+              attributesToHighlight: ['name', 'description', 'category', 'brand'],
+              attributesToSnippet: ['description:50']
+            }]
           });
+          const hits = (response.results[0] as { hits?: SearchResult[] })?.hits || [];
           setResults(hits as SearchResult[]);
           setShowResults(true);
           setSelectedIndex(-1);

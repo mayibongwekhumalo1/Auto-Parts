@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Socket.IO server setup (this would typically be in server.js or custom server)
+// @ts-expect-error - This function is not used in Next.js API routes but kept for reference
 export const initSocketServer = (server: NetServer) => {
   const io = new ServerIO(server, {
     path: '/api/socket',

@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Create order
-    const orderItems = cart.items.map((item: any) => ({
+    const orderItems = cart.items.map((item: { product: unknown; name: string; price: number; quantity: number }) => ({
       product: item.product,
       name: item.name,
       price: item.price,

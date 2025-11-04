@@ -263,9 +263,10 @@ export default function AddProductPage() {
                           folder: 'auto_parts',
                           resourceType: 'image'
                         }}
-                        onSuccess={(result: any) => {
-                          if (result?.info?.secure_url) {
-                            setUploadedImages(prev => [...prev, result.info.secure_url]);
+                        onSuccess={(result) => {
+                          const info = result?.info;
+                          if (typeof info === 'object' && info?.secure_url) {
+                            setUploadedImages(prev => [...prev, info.secure_url]);
                           }
                         }}
                       >
@@ -299,6 +300,8 @@ export default function AddProductPage() {
                               src={url}
                               alt={`Product image ${index + 1}`}
                               className="w-full h-24 object-cover rounded-lg border border-gray-600"
+                              width={96}
+                              height={96}
                             />
                             <button
                               type="button"

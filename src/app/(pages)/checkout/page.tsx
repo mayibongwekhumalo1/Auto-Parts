@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
+import type { StripeCardElement } from '@stripe/stripe-js';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
@@ -104,7 +105,7 @@ export default function CheckoutPage() {
             payment_method: {
               card: {
                 // This would be handled by Stripe Elements in a real implementation
-              } as unknown as any,
+              } as unknown as StripeCardElement,
               billing_details: {
                 name: 'Customer Name', // Would get from form
               },

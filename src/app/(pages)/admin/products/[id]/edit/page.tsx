@@ -313,9 +313,10 @@ export default function EditProductPage() {
                     {process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ? (
                       <CldUploadWidget
                         uploadPreset="auto_parts_images"
-                        onSuccess={(result: any) => {
-                          if (result?.info?.secure_url) {
-                            setUploadedImages(prev => [...prev, result.info.secure_url]);
+                        onSuccess={(result) => {
+                          const info = result?.info;
+                          if (typeof info === 'object' && info?.secure_url) {
+                            setUploadedImages(prev => [...prev, info.secure_url]);
                           }
                         }}
                       >

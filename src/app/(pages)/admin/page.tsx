@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Settings, BarChart3, Package, Wrench, Users, DollarSign, Edit, Trash2, Plus, ArrowLeft, Crown, User, Star, AlertTriangle, TrendingUp, Search, Filter, CheckSquare, Square, Bell, X, FileText, MessageSquare } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
+import { Settings, BarChart3, Package, Wrench, Users, DollarSign, Edit, Trash2, Plus, ArrowLeft, Crown, User, Star, AlertTriangle, TrendingUp, Search, CheckSquare, Square, Bell, X, FileText, MessageSquare } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 interface User {
   _id: string;
@@ -77,8 +77,8 @@ export default function AdminDashboard() {
     const [users, setUsers] = useState<User[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
-    const [blogs, setBlogs] = useState<Blog[]>([]);
-    const [comments, setComments] = useState<Comment[]>([]);
+    const [blogs] = useState<Blog[]>([]);
+    const [comments] = useState<Comment[]>([]);
     const [revenueData, setRevenueData] = useState<Array<{date: string; revenue: number; orders: number}>>([]);
     const [clvData, setClvData] = useState<Array<{userId: string; name: string; email: string; totalSpent: number; orderCount: number; averageOrderValue: number; customerLifetime: number}>>([]);
     const [stockAlerts, setStockAlerts] = useState<Array<{id: string; name: string; category: string; currentStock: number; alertLevel: string}>>([]);
@@ -179,18 +179,18 @@ export default function AdminDashboard() {
   }, []);
 
   // Save widget settings to localStorage
-  const saveWidgetSettings = () => {
+  const saveWidgetSettings = useCallback(() => {
     const settings = {
       widgetVisibility,
       autoRefreshEnabled,
       refreshInterval
     };
     localStorage.setItem('adminWidgetSettings', JSON.stringify(settings));
-  };
+  }, [widgetVisibility, autoRefreshEnabled, refreshInterval]);
 
   useEffect(() => {
     saveWidgetSettings();
-  }, [widgetVisibility, autoRefreshEnabled, refreshInterval]);
+  }, [saveWidgetSettings]);
 
   const checkAdminAccess = async () => {
     try {
@@ -605,13 +605,13 @@ export default function AdminDashboard() {
 
         if (reportType === 'profit-margins') {
           csvContent = 'Product,Category,Brand,Supplier,Cost Price,Selling Price,Profit,Margin (%)\n';
-          data.data.products.forEach((product: any) => {
+          data.data.products.forEach((product: { name: string; category: string; brand: string; supplier?: string; costPrice: number; sellingPrice: number; profit: number; margin: number }) => {
             csvContent += `"${product.name}","${product.category}","${product.brand}","${product.supplier || ''}",${product.costPrice},${product.sellingPrice},${product.profit},${product.margin}\n`;
           });
           filename = 'profit-margins-report.csv';
         } else if (reportType === 'monthly-summary') {
           csvContent = 'Period,Orders,Revenue,Cost,Profit,Margin (%)\n';
-          monthlySummary.forEach((month: any) => {
+          monthlySummary.forEach((month: { period: string; orderCount: number; revenue: number; cost: number; profit: number; margin: number }) => {
             csvContent += `"${month.period}",${month.orderCount},${month.revenue.toFixed(2)},${month.cost.toFixed(2)},${month.profit.toFixed(2)},${month.margin.toFixed(2)}\n`;
           });
           filename = 'monthly-financial-summary.csv';
@@ -656,17 +656,17 @@ export default function AdminDashboard() {
         if (reportType === 'profit-margins') {
           pdfContent += 'PROFIT MARGIN ANALYSIS\n\n';
           pdfContent += 'Category Summary:\n';
-          reportsData.categoryMargins.forEach((cat: any) => {
+          reportsData.categoryMargins.forEach((cat: { category: string; totalProducts: number; totalRevenue: number; averageMargin: number }) => {
             pdfContent += `${cat.category}: ${cat.totalProducts} products, $${cat.totalRevenue.toFixed(2)} revenue, ${cat.averageMargin.toFixed(2)}% margin\n`;
           });
           pdfContent += '\nTop Products:\n';
-          reportsData.productMargins.slice(0, 10).forEach((product: any) => {
+          reportsData.productMargins.slice(0, 10).forEach((product: { name: string; sellingPrice: number; margin: number }) => {
             pdfContent += `${product.name}: $${product.sellingPrice.toFixed(2)} (${product.margin.toFixed(2)}% margin)\n`;
           });
           filename = 'profit-margins-report.pdf';
         } else if (reportType === 'monthly-summary') {
           pdfContent += 'MONTHLY FINANCIAL SUMMARY\n\n';
-          monthlySummary.forEach((month: any) => {
+          monthlySummary.forEach((month: { period: string; orderCount: number; revenue: number; profit: number; margin: number }) => {
             pdfContent += `${month.period}: ${month.orderCount} orders, $${month.revenue.toFixed(2)} revenue, $${month.profit.toFixed(2)} profit (${month.margin.toFixed(2)}% margin)\n`;
           });
           filename = 'monthly-financial-summary.pdf';

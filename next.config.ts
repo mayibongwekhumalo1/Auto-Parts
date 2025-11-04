@@ -13,11 +13,13 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizeCss: true,
   },
+  serverExternalPackages: ['mongoose'],
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   // Vercel-specific configurations
   output: 'standalone',
+  trailingSlash: true,
   webpack: (config, { dev, isServer }) => {
     // Optimize bundle splitting
     if (!dev && !isServer) {
