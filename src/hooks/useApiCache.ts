@@ -72,6 +72,7 @@ export function useApiCache<T>(
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  invalidate: () => void;
 } {
   const { ttl = 5 * 60 * 1000, enabled = true } = options;
   const [data, setData] = useState<T | null>(null);
@@ -112,11 +113,15 @@ export function useApiCache<T>(
     await fetchData(true);
   }, [fetchData]);
 
+  const invalidate = useCallback(() => {
+    apiCache.delete(cacheKey);
+  }, [cacheKey]);
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  return { data, loading, error, refetch };
+  return { data, loading, error, refetch, invalidate };
 }
 
 // Hook for prefetching data

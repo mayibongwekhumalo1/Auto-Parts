@@ -80,6 +80,12 @@ UserSchema.pre('save', async function(next) {
   this.password = await bcrypt.hash(this.password as string, salt);
 });
 
+// Indexes for performance
+UserSchema.index({ email: 1 }, { unique: true });
+UserSchema.index({ role: 1 });
+UserSchema.index({ createdAt: -1 });
+UserSchema.index({ totalOrders: -1, totalSpent: -1 }); // For loyalty program queries
+
 // Sign JWT and return
 UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
   return await bcrypt.compare(candidatePassword, this.password);

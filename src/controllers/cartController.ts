@@ -3,6 +3,13 @@ import jwt from 'jsonwebtoken';
 import connectToDatabase from '../utils/database';
 import Cart from '../models/Cart';
 import Product from '../models/Product';
+import {
+  getSessionId,
+  createSessionId,
+  getGuestCart,
+  setGuestCart,
+  setSessionCookie
+} from '../utils/session';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -23,19 +30,41 @@ export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
 
-    const userId = await getUserFromToken(request);
-    const cart = await Cart.findOne({ user: userId }).populate('items.product');
+    // Try authenticated user first, fallback to guest
+    let userId = null;
+    let sessionId = '';
 
-    if (!cart) {
-      return NextResponse.json({ items: [], totalAmount: 0 });
+    try {
+      userId = await getUserFromToken(request);
+    } catch (error) {
+      sessionId = getSessionId(request);
+      if (!sessionId) {
+        return NextResponse.json({ items: [], totalAmount: 0, isGuest: true });
+      }
     }
 
-    return NextResponse.json(cart);
+    if (userId) {
+      // Authenticated user cart
+      const cart = await Cart.findOne({ user: userId }).populate('items.product');
+      if (!cart) {
+        return NextResponse.json({ items: [], totalAmount: 0 });
+      }
+      return NextResponse.json(cart);
+    } else {
+      // Guest cart
+      const guestCart = getGuestCart(sessionId);
+      const totalAmount = guestCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      return NextResponse.json({
+        items: guestCart,
+        totalAmount,
+        isGuest: true
+      });
+    }
   } catch (error) {
     console.error('Error fetching cart:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 401 }
+      { status: 500 }
     );
   }
 }
@@ -79,19 +108,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For guest users, use session-based cart (simplified - in production use Redis/session)
+    const cartItem = {
+      product: productId,
+      name: product.name,
+      price: product.price,
+      quantity,
+      image: product.images[0]
+    };
+
     if (!userId) {
-      // For now, return success for guest users
-      return NextResponse.json({
-        message: 'Product added to cart (guest)',
-        product: {
-          _id: product._id,
-          name: product.name,
-          price: product.price,
-          quantity,
-          image: product.images[0]
-        }
+      // Handle guest cart using session
+      const guestCart = getGuestCart(sessionId);
+      const existingItemIndex = guestCart.findIndex(
+        (item) => item.product === productId
+      );
+
+      if (existingItemIndex > -1) {
+        guestCart[existingItemIndex].quantity += quantity;
+      } else {
+        guestCart.push(cartItem);
+      }
+
+      setGuestCart(sessionId, guestCart);
+
+      const response = NextResponse.json({
+        items: guestCart,
+        totalAmount: guestCart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+        isGuest: true
       });
+
+      setSessionCookie(response, sessionId);
+      return response;
     }
 
     // Find or create cart for authenticated users
@@ -102,7 +149,7 @@ export async function POST(request: NextRequest) {
 
     // Check if item already exists in cart
     const existingItemIndex = cart.items.findIndex(
-      (item: any) => item.product.toString() === productId
+      (item) => item.product.toString() === productId
     );
 
     if (existingItemIndex > -1) {
@@ -163,7 +210,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const itemIndex = cart.items.findIndex(
-      (item: any) => item.product.toString() === productId
+      (item) => item.product.toString() === productId
     );
 
     if (itemIndex === -1) {
@@ -221,7 +268,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     cart.items = cart.items.filter(
-      (item: any) => item.product.toString() !== productId
+      (item) => item.product.toString() !== productId
     );
 
     await cart.save();

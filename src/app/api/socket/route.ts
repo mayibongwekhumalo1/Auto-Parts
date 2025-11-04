@@ -7,9 +7,9 @@ import Order from '../../../models/Order';
 import User from '../../../models/User';
 
 export async function GET(request: NextRequest) {
-  // This is a placeholder for Socket.IO integration
-  // In a real implementation, you'd set up Socket.IO server in a custom server
-  return new Response('Socket endpoint', { status: 200 });
+  // Socket.IO is disabled for Vercel deployment
+  // Vercel doesn't support WebSocket connections in serverless functions
+  return new Response('Socket.IO disabled for Vercel deployment', { status: 200 });
 }
 
 // Socket.IO server setup (this would typically be in server.js or custom server)

@@ -4,7 +4,9 @@ import connectToDatabase from '../utils/database';
 import Order from '../models/Order';
 import Cart from '../models/Cart';
 import Product from '../models/Product';
+import User from '../models/User';
 import Stripe from 'stripe';
+import { sendOrderConfirmationEmail } from '../utils/email';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
@@ -114,6 +116,29 @@ export async function POST(request: NextRequest) {
     await Cart.findOneAndDelete({ user: userId });
 
     await order.populate('items.product');
+
+    // Send order confirmation email
+    try {
+      const user = await User.findById(userId);
+      if (user) {
+        await sendOrderConfirmationEmail({
+          orderId: order._id.toString(),
+          customerName: user.name,
+          customerEmail: user.email,
+          items: order.items.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price
+          })),
+          totalAmount: order.totalAmount,
+          shippingAddress: order.shippingAddress,
+          orderDate: order.createdAt
+        });
+      }
+    } catch (emailError) {
+      console.error('Failed to send order confirmation email:', emailError);
+      // Don't fail the order if email fails
+    }
 
     return NextResponse.json({
       order,

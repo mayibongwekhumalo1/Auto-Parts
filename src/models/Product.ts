@@ -73,11 +73,17 @@ const ProductSchema: Schema = new Schema({
   timestamps: true
 });
 
-// Index for search
+// Index for search and performance
 ProductSchema.index({ name: 'text', description: 'text' });
 ProductSchema.index({ category: 1 });
 ProductSchema.index({ brand: 1 });
 ProductSchema.index({ price: 1 });
 ProductSchema.index({ supplier: 1 });
+ProductSchema.index({ featured: 1 });
+ProductSchema.index({ sale: 1 });
+ProductSchema.index({ stock: 1 });
+ProductSchema.index({ createdAt: -1 });
+ProductSchema.index({ category: 1, featured: 1, stock: 1 }); // Compound index for homepage queries
+ProductSchema.index({ brand: 1, category: 1 }); // Compound index for filtering
 
 export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);

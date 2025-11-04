@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import { connect } from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/ecommerce';
 
@@ -6,21 +6,14 @@ if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
 }
 
-interface MongooseCache {
-  conn: typeof mongoose | null;
-  promise: Promise<typeof mongoose> | null;
-}
-
-let cached: MongooseCache = (global as any).mongoose;
+let cached = global.mongoose;
 
 if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+  cached = global.mongoose = { conn: null, promise: null };
 }
 
 async function connectToDatabase() {
-  console.log('[DEBUG] Attempting to connect to database...');
   if (cached.conn) {
-    console.log('[DEBUG] Using cached database connection');
     return cached.conn;
   }
 
@@ -33,18 +26,14 @@ async function connectToDatabase() {
       maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
     };
 
-    console.log('[DEBUG] Creating new database connection promise');
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      console.log('[DEBUG] Database connection established successfully');
+    cached.promise = connect(MONGODB_URI, opts).then((mongoose) => {
       return mongoose;
     });
   }
 
   try {
     cached.conn = await cached.promise;
-    console.log('[DEBUG] Database connection retrieved from promise');
   } catch (e) {
-    console.error('[DEBUG] Database connection failed:', e.message);
     cached.promise = null;
     throw e;
   }

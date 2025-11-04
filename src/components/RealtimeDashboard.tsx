@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { useSocket } from '../hooks/useSocket';
 import { TrendingUp, Users, ShoppingCart, DollarSign, AlertTriangle, Package } from 'lucide-react';
 
 interface DashboardData {
@@ -39,41 +39,19 @@ interface RealtimeDashboardProps {
 }
 
 export default function RealtimeDashboard({ className = "" }: RealtimeDashboardProps) {
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [connected, setConnected] = useState(false);
+  const { isConnected, dashboardData, joinDashboard } = useSocket();
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   useEffect(() => {
-    // Initialize socket connection
-    const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000', {
-      transports: ['websocket', 'polling']
-    });
+    // Join dashboard room when component mounts
+    joinDashboard();
+  }, [joinDashboard]);
 
-    socketInstance.on('connect', () => {
-      console.log('Connected to dashboard socket');
-      setConnected(true);
-    });
-
-    socketInstance.on('disconnect', () => {
-      console.log('Disconnected from dashboard socket');
-      setConnected(false);
-    });
-
-    socketInstance.on('dashboard-update', (newData: DashboardData) => {
-      setData(newData);
+  useEffect(() => {
+    if (dashboardData) {
       setLastUpdate(new Date());
-    });
-
-    // Request initial data
-    socketInstance.emit('join-dashboard');
-
-    setSocket(socketInstance);
-
-    return () => {
-      socketInstance.disconnect();
-    };
-  }, []);
+    }
+  }, [dashboardData]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -86,7 +64,7 @@ export default function RealtimeDashboard({ className = "" }: RealtimeDashboardP
     return new Intl.NumberFormat('en-US').format(num);
   };
 
-  if (!data) {
+  if (!dashboardData) {
     return (
       <div className={`space-y-6 ${className}`}>
         <div className="flex items-center justify-between">
@@ -113,9 +91,9 @@ export default function RealtimeDashboard({ className = "" }: RealtimeDashboardP
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">Real-time Dashboard</h2>
         <div className="flex items-center gap-4">
-          <div className={`flex items-center gap-2 ${connected ? 'text-green-500' : 'text-red-500'}`}>
-            <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <span className="text-sm">{connected ? 'Live' : 'Offline'}</span>
+          <div className={`flex items-center gap-2 ${isConnected ? 'text-green-500' : 'text-red-500'}`}>
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-sm">{isConnected ? 'Live' : 'Offline'}</span>
           </div>
           <span className="text-xs text-gray-400">
             Last update: {lastUpdate.toLocaleTimeString()}
@@ -129,9 +107,9 @@ export default function RealtimeDashboard({ className = "" }: RealtimeDashboardP
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-400">Today's Revenue</p>
-              <p className="text-2xl font-bold text-white">{formatCurrency(data.revenue.today)}</p>
-              <p className={`text-sm ${data.revenue.growth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {data.revenue.growth >= 0 ? '+' : ''}{data.revenue.growth.toFixed(1)}% from yesterday
+              <p className="text-2xl font-bold text-white">{formatCurrency(dashboardData.revenue.today)}</p>
+              <p className={`text-sm ${dashboardData.revenue.growth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                {dashboardData.revenue.growth >= 0 ? '+' : ''}{dashboardData.revenue.growth.toFixed(1)}% from yesterday
               </p>
             </div>
             <DollarSign className="h-8 w-8 text-green-500" />
@@ -142,9 +120,9 @@ export default function RealtimeDashboard({ className = "" }: RealtimeDashboardP
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-400">Active Orders</p>
-              <p className="text-2xl font-bold text-white">{formatNumber(data.orders.pending)}</p>
+              <p className="text-2xl font-bold text-white">{formatNumber(dashboardData.orders.pending)}</p>
               <p className="text-sm text-gray-400">
-                {data.orders.completed} completed today
+                {dashboardData.orders.completed} completed today
               </p>
             </div>
             <ShoppingCart className="h-8 w-8 text-blue-500" />
@@ -155,9 +133,9 @@ export default function RealtimeDashboard({ className = "" }: RealtimeDashboardP
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-400">Online Users</p>
-              <p className="text-2xl font-bold text-white">{formatNumber(data.users.online)}</p>
+              <p className="text-2xl font-bold text-white">{formatNumber(dashboardData.users.online)}</p>
               <p className="text-sm text-gray-400">
-                {data.users.newToday} new today
+                {dashboardData.users.newToday} new today
               </p>
             </div>
             <Users className="h-8 w-8 text-purple-500" />
@@ -168,9 +146,9 @@ export default function RealtimeDashboard({ className = "" }: RealtimeDashboardP
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-400">Inventory Alerts</p>
-              <p className="text-2xl font-bold text-white">{data.inventory.lowStock + data.inventory.outOfStock}</p>
+              <p className="text-2xl font-bold text-white">{dashboardData.inventory.lowStock + dashboardData.inventory.outOfStock}</p>
               <p className="text-sm text-gray-400">
-                {data.inventory.totalProducts} total products
+                {dashboardData.inventory.totalProducts} total products
               </p>
             </div>
             <Package className="h-8 w-8 text-orange-500" />
@@ -179,14 +157,14 @@ export default function RealtimeDashboard({ className = "" }: RealtimeDashboardP
       </div>
 
       {/* Alerts Section */}
-      {data.alerts.length > 0 && (
+      {dashboardData.alerts.length > 0 && (
         <div className="bg-zinc-900 p-6 rounded-lg">
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-yellow-500" />
             Recent Alerts
           </h3>
           <div className="space-y-3">
-            {data.alerts.slice(0, 5).map((alert) => (
+            {dashboardData.alerts.slice(0, 5).map((alert: any) => (
               <div
                 key={alert.id}
                 className={`p-3 rounded border-l-4 ${

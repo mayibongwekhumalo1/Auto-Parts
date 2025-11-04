@@ -3,11 +3,28 @@
 
 import React from "react";
 import Link from "next/link";
-import { Menu, ShoppingCart } from "lucide-react";
+import { Menu, ShoppingCart, LogOut } from "lucide-react";
 import { useAuth } from "./hooks";
+import { useRouter } from "next/navigation";
 
 export default function Navbar() {
   const user = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      localStorage.removeItem('user');
+      window.dispatchEvent(new Event('authChange'));
+      router.push('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Fallback to client-side logout
+      localStorage.removeItem('user');
+      window.dispatchEvent(new Event('authChange'));
+      router.push('/');
+    }
+  };
   return (
     <header className="border-b border-zinc-800">
       <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
@@ -38,8 +55,17 @@ export default function Navbar() {
             Cart
           </Link>
           {user ? (
-            <div className="text-sm px-3 py-2 border border-zinc-700 rounded-md bg-zinc-800 text-white">
-              {user.email.charAt(0).toUpperCase()}
+            <div className="flex items-center gap-2">
+              <div className="text-sm px-3 py-2 border border-zinc-700 rounded-md bg-zinc-800 text-white">
+                {user.email.charAt(0).toUpperCase()}
+              </div>
+              <button
+                onClick={handleLogout}
+                className="text-sm px-3 py-2 border border-zinc-700 rounded-md hover:bg-zinc-700 transition-colors"
+                title="Logout"
+              >
+                <LogOut size={16} />
+              </button>
             </div>
           ) : (
             <Link href="/login" className="text-sm px-3 py-2 border border-zinc-700 rounded-md">Login</Link>

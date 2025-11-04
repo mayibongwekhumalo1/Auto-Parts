@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '../utils/database';
 import Product from '../models/Product';
+import { validateProductData, sanitizeString } from '../utils/validation';
 
 // GET /api/products - Get all products with pagination and filtering
 export async function GET(request: NextRequest) {
@@ -82,24 +83,38 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, description, price, category, brand, images, stock, featured, sale } = body;
 
-    // Validate required fields
-    if (!name || !description || !price || !category || !brand || stock === undefined) {
+    // Sanitize inputs
+    const sanitizedData = {
+      name: name ? sanitizeString(name) : '',
+      description: description ? sanitizeString(description) : '',
+      price,
+      category: category ? sanitizeString(category) : '',
+      brand: brand ? sanitizeString(brand) : '',
+      images,
+      stock,
+      featured,
+      sale
+    };
+
+    // Validate data
+    const validation = validateProductData(sanitizedData);
+    if (!validation.isValid) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Validation failed', details: validation.errors },
         { status: 400 }
       );
     }
 
     const product = await Product.create({
-      name,
-      description,
-      price,
-      category,
-      brand,
-      images: images || [],
-      stock,
-      featured: featured || false,
-      sale: sale || false
+      name: sanitizedData.name,
+      description: sanitizedData.description,
+      price: sanitizedData.price,
+      category: sanitizedData.category,
+      brand: sanitizedData.brand,
+      images: sanitizedData.images || [],
+      stock: sanitizedData.stock,
+      featured: sanitizedData.featured || false,
+      sale: sanitizedData.sale || false
     });
 
     return NextResponse.json(product, { status: 201 });

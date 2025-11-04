@@ -59,7 +59,7 @@ export default function GalleryPage() {
             <div key={product._id} className="bg-zinc-900 border border-zinc-800 rounded-md overflow-hidden hover:border-red-600 transition-colors">
               <div className="relative h-48">
                 <Image
-                  src={product.images[0] || "/images/placeholder.jpg"}
+                  src={"/images/placeholder.jpg"}
                   alt={product.name}
                   fill
                   className="object-cover"
