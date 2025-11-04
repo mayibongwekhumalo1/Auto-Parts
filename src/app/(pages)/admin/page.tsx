@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Settings, BarChart3, Package, Wrench, Users, DollarSign, Edit, Trash2, Plus, ArrowLeft, Crown, User, Star, AlertTriangle, TrendingUp, Search, Filter, CheckSquare, Square, Bell, X, FileText } from 'lucide-react';
+import { Settings, BarChart3, Package, Wrench, Users, DollarSign, Edit, Trash2, Plus, ArrowLeft, Crown, User, Star, AlertTriangle, TrendingUp, Search, Filter, CheckSquare, Square, Bell, X, FileText, MessageSquare } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 
 interface User {
@@ -37,11 +37,48 @@ interface Product {
   featured: boolean;
 }
 
+interface Blog {
+  _id: string;
+  title: string;
+  excerpt: string;
+  slug: string;
+  author: {
+    name: string;
+    email: string;
+  };
+  published: boolean;
+  publishedAt?: string;
+  createdAt: string;
+  tags: string[];
+}
+
+interface Comment {
+  _id: string;
+  content: string;
+  author: {
+    name: string;
+    email: string;
+  };
+  authorName: string;
+  authorEmail: string;
+  blog: {
+    title: string;
+    slug: string;
+  };
+  approved: boolean;
+  createdAt: string;
+  parentComment?: {
+    content: string;
+  };
+}
+
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState('overview');
     const [users, setUsers] = useState<User[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
+    const [blogs, setBlogs] = useState<Blog[]>([]);
+    const [comments, setComments] = useState<Comment[]>([]);
     const [revenueData, setRevenueData] = useState<Array<{date: string; revenue: number; orders: number}>>([]);
     const [clvData, setClvData] = useState<Array<{userId: string; name: string; email: string; totalSpent: number; orderCount: number; averageOrderValue: number; customerLifetime: number}>>([]);
     const [stockAlerts, setStockAlerts] = useState<Array<{id: string; name: string; category: string; currentStock: number; alertLevel: string}>>([]);
@@ -157,50 +194,44 @@ export default function AdminDashboard() {
 
   const checkAdminAccess = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
-      const response = await fetch('/api/auth/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      console.log('Checking admin access...');
+      const response = await fetch('/api/auth/profile');
+      console.log('Profile response status:', response.status);
 
       if (!response.ok) {
+        console.log('Profile request failed, redirecting to login');
         router.push('/login');
         return;
       }
 
       const data = await response.json();
+      console.log('User data:', data);
       if (data.user.role !== 'admin') {
+        console.log('User is not admin, redirecting to home');
         router.push('/');
         return;
       }
+      console.log('Admin access granted');
     } catch (error) {
+      console.log('Error checking admin access:', error);
       router.push('/login');
     }
   };
 
   const loadData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers = {
-        'Authorization': `Bearer ${token}`
-      };
-
-      const [usersRes, ordersRes, productsRes, revenueRes, clvRes, stockRes, turnoverRes, reportsRes, monthlyRes] = await Promise.all([
-        fetch('/api/admin/users', { headers }),
-        fetch('/api/admin/orders', { headers }),
-        fetch('/api/admin/products', { headers }),
-        fetch('/api/admin/revenue', { headers }),
-        fetch('/api/admin/clv', { headers }),
-        fetch('/api/admin/stock-alerts', { headers }),
-        fetch('/api/admin/inventory-turnover', { headers }),
-        fetch('/api/admin/reports?type=profit-margins', { headers }),
-        fetch('/api/admin/reports?type=monthly-summary', { headers })
+      const [usersRes, ordersRes, productsRes, blogsRes, commentsRes, revenueRes, clvRes, stockRes, turnoverRes, reportsRes, monthlyRes] = await Promise.all([
+        fetch('/api/admin/users'),
+        fetch('/api/admin/orders'),
+        fetch('/api/admin/products'),
+        fetch('/api/admin/blogs'),
+        fetch('/api/admin/comments'),
+        fetch('/api/admin/revenue'),
+        fetch('/api/admin/clv'),
+        fetch('/api/admin/stock-alerts'),
+        fetch('/api/admin/inventory-turnover'),
+        fetch('/api/admin/reports?type=profit-margins'),
+        fetch('/api/admin/reports?type=monthly-summary')
       ]);
 
       if (usersRes.ok) {
@@ -260,12 +291,10 @@ export default function AdminDashboard() {
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/orders/${orderId}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ status })
       });
@@ -284,12 +313,8 @@ export default function AdminDashboard() {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/admin/products/${productId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        method: 'DELETE'
       });
 
       if (response.ok) {
@@ -302,14 +327,101 @@ export default function AdminDashboard() {
     }
   };
 
+  const deleteBlog = async (blogId: string) => {
+    if (!confirm('Are you sure you want to delete this blog post?')) return;
+
+    try {
+      const response = await fetch(`/api/admin/blogs/${blogId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        loadData(); // Reload data
+        addAlert('info', 'Blog post deleted successfully');
+      } else {
+        addAlert('error', 'Failed to delete blog post');
+      }
+    } catch (error) {
+      addAlert('error', 'Failed to delete blog post');
+    }
+  };
+
+  const approveComment = async (commentId: string) => {
+    try {
+      const response = await fetch(`/api/admin/comments/${commentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ approved: true })
+      });
+
+      if (response.ok) {
+        loadData(); // Reload data
+        addAlert('info', 'Comment approved successfully');
+      } else {
+        addAlert('error', 'Failed to approve comment');
+      }
+    } catch (error) {
+      addAlert('error', 'Failed to approve comment');
+    }
+  };
+
+  const deleteComment = async (commentId: string) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return;
+
+    try {
+      const response = await fetch(`/api/admin/comments/${commentId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        loadData(); // Reload data
+        addAlert('info', 'Comment deleted successfully');
+      } else {
+        addAlert('error', 'Failed to delete comment');
+      }
+    } catch (error) {
+      addAlert('error', 'Failed to delete comment');
+    }
+  };
+
+  const bulkApproveComments = async () => {
+    const pendingComments = comments.filter(c => !c.approved);
+    if (pendingComments.length === 0) {
+      addAlert('warning', 'No pending comments to approve');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/comments', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          commentIds: pendingComments.map(c => c._id),
+          approved: true
+        })
+      });
+
+      if (response.ok) {
+        loadData(); // Reload data
+        addAlert('info', `Approved ${pendingComments.length} comments`);
+      } else {
+        addAlert('error', 'Failed to approve comments');
+      }
+    } catch (error) {
+      addAlert('error', 'Failed to approve comments');
+    }
+  };
+
   const updateUserRole = async (userId: string, role: string) => {
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/admin/users/${userId}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ role })
       });
@@ -368,12 +480,10 @@ export default function AdminDashboard() {
     }
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/admin/products/bulk-price-update', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           productIds: Array.from(selectedProducts),
@@ -406,12 +516,10 @@ export default function AdminDashboard() {
     }
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/admin/orders/bulk-status-update', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           orderIds: Array.from(selectedOrders),
@@ -863,6 +971,8 @@ export default function AdminDashboard() {
                 { id: 'customers', label: 'Customer Insights', icon: Users },
                 { id: 'orders', label: 'Orders', icon: Package },
                 { id: 'products', label: 'Products', icon: Wrench },
+                { id: 'blogs', label: 'Blogs', icon: FileText },
+                { id: 'comments', label: 'Comments', icon: MessageSquare },
                 { id: 'users', label: 'Users', icon: Users }
               ].map((tab) => (
                 <button
@@ -1410,6 +1520,176 @@ export default function AdminDashboard() {
                             >
                               <Trash2 className="w-3 h-3 sm:mr-1" />
                               <span className="hidden sm:inline">Delete</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'blogs' && (
+          <div className="bg-[#1a1a1a] shadow-2xl rounded-2xl border border-gray-800 overflow-hidden">
+            <div className="px-6 py-6 bg-gradient-to-r from-blue-600 to-purple-600">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-bold text-white flex items-center">
+                    <FileText className="mr-3 w-6 h-6" />
+                    Blog Management
+                  </h3>
+                  <p className="text-blue-100 mt-1">Create and manage blog posts</p>
+                </div>
+                <Link
+                  href="/admin/blogs/new"
+                  className="bg-white text-black px-6 py-3 rounded-xl hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-semibold flex items-center"
+                >
+                  <Plus className="mr-2 w-4 h-4" />
+                  New Blog Post
+                </Link>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-700">
+                  <thead className="bg-[#2a2a2a]">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Title</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Author</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Published</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-[#1a1a1a] divide-y divide-gray-700">
+                    {blogs.map((blog, index) => (
+                      <tr key={blog._id} className={`hover:bg-[#2a2a2a] transition-colors duration-200 ${index % 2 === 0 ? 'bg-[#1a1a1a]' : 'bg-[#202020]'}`}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white">
+                          <div>
+                            <div>{blog.title}</div>
+                            <div className="text-xs text-gray-400">{blog.slug}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{blog.author.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-bold rounded-full ${
+                            blog.published ? 'bg-green-900 text-green-300 border border-green-700' : 'bg-yellow-900 text-yellow-300 border border-yellow-700'
+                          }`}>
+                            {blog.published ? 'Published' : 'Draft'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                          {blog.publishedAt ? new Date(blog.publishedAt).toLocaleDateString() : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex gap-2">
+                            <Link
+                              href={`/admin/blogs/${blog._id}/edit`}
+                              className="inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-lg bg-blue-900 text-blue-300 hover:bg-blue-800 transition-colors duration-200"
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              Edit
+                            </Link>
+                            <button
+                              onClick={() => deleteBlog(blog._id)}
+                              className="inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-lg bg-red-900 text-red-300 hover:bg-red-800 transition-colors duration-200"
+                            >
+                              <Trash2 className="w-3 h-3 mr-1" />
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'comments' && (
+          <div className="bg-[#1a1a1a] shadow-2xl rounded-2xl border border-gray-800 overflow-hidden">
+            <div className="px-6 py-6 bg-gradient-to-r from-green-600 to-teal-600">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-bold text-white flex items-center">
+                    <MessageSquare className="mr-3 w-6 h-6" />
+                    Comment Management
+                  </h3>
+                  <p className="text-green-100 mt-1">Moderate and manage blog comments</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <span className="text-green-100 text-sm">
+                    {comments.filter(c => !c.approved).length} pending approval
+                  </span>
+                  <button
+                    onClick={bulkApproveComments}
+                    className="bg-white text-black px-4 py-2 rounded-lg hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-semibold"
+                  >
+                    Approve All
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-700">
+                  <thead className="bg-[#2a2a2a]">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Comment</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Blog</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Author</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-[#1a1a1a] divide-y divide-gray-700">
+                    {comments.map((comment, index) => (
+                      <tr key={comment._id} className={`hover:bg-[#2a2a2a] transition-colors duration-200 ${index % 2 === 0 ? 'bg-[#1a1a1a]' : 'bg-[#202020]'}`}>
+                        <td className="px-6 py-4 text-sm text-gray-300 max-w-xs truncate">
+                          {comment.content}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                          {comment.blog.title}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                          <div>
+                            <div>{comment.authorName}</div>
+                            <div className="text-xs text-gray-400">{comment.authorEmail}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-bold rounded-full ${
+                            comment.approved ? 'bg-green-900 text-green-300 border border-green-700' : 'bg-yellow-900 text-yellow-300 border border-yellow-700'
+                          }`}>
+                            {comment.approved ? 'Approved' : 'Pending'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                          {new Date(comment.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex gap-2">
+                            {!comment.approved && (
+                              <button
+                                onClick={() => approveComment(comment._id)}
+                                className="inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-lg bg-green-900 text-green-300 hover:bg-green-800 transition-colors duration-200"
+                              >
+                                <CheckSquare className="w-3 h-3 mr-1" />
+                                Approve
+                              </button>
+                            )}
+                            <button
+                              onClick={() => deleteComment(comment._id)}
+                              className="inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-lg bg-red-900 text-red-300 hover:bg-red-800 transition-colors duration-200"
+                            >
+                              <Trash2 className="w-3 h-3 mr-1" />
+                              Delete
                             </button>
                           </div>
                         </td>

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/utils/database';
-import Order from '@/models/Order';
+import Blog from '@/models/Blog';
 import User from '@/models/User';
 import { getAdminUserFromRequest } from '@/utils/auth';
 
-// GET /api/admin/orders - Get all orders (Admin only)
+// GET /api/admin/blogs - Get all blogs (Admin only)
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
@@ -20,14 +20,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const orders = await Order.find({})
-      .populate('user', 'name email')
-      .populate('items.product', 'name price')
+    const blogs = await Blog.find({})
+      .populate('author', 'name email')
       .sort({ createdAt: -1 });
 
-    return NextResponse.json(orders);
+    return NextResponse.json(blogs);
   } catch (error) {
-    console.error('Error fetching orders:', error);
+    console.error('Error fetching blogs:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -35,15 +34,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PUT /api/admin/orders/bulk-status-update - Bulk update order status (Admin only)
-export async function PUT(request: NextRequest) {
+// POST /api/admin/blogs - Create a new blog (Admin only)
+export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
 
     const userId = await getAdminUserFromRequest(request);
 
     // Check if user is admin
-    
     const adminUser = await User.findById(userId);
     if (!adminUser || adminUser.role !== 'admin') {
       return NextResponse.json(
@@ -52,35 +50,51 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { orderIds, status } = await request.json();
+    const { title, content, excerpt, slug, tags, featuredImage, published } = await request.json();
 
     // Validate input
-    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+    if (!title || !content || !excerpt) {
       return NextResponse.json(
-        { error: 'Please provide orderIds array' },
+        { error: 'Please provide title, content, and excerpt' },
         { status: 400 }
       );
     }
 
-    if (!status || !['pending', 'processing', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+    // Generate slug if not provided
+    let finalSlug = slug;
+    if (!finalSlug) {
+      finalSlug = title
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .replace(/\s+/g, '-')
+        .trim();
+    }
+
+    // Check if slug already exists
+    const existingBlog = await Blog.findOne({ slug: finalSlug });
+    if (existingBlog) {
       return NextResponse.json(
-        { error: 'Please provide valid status' },
+        { error: 'Blog with this slug already exists' },
         { status: 400 }
       );
     }
 
-    // Update orders
-    const result = await Order.updateMany(
-      { _id: { $in: orderIds } },
-      { status, updatedAt: new Date() }
-    );
-
-    return NextResponse.json({
-      message: `Updated ${result.modifiedCount} orders`,
-      modifiedCount: result.modifiedCount
+    const blog = await Blog.create({
+      title,
+      content,
+      excerpt,
+      author: userId,
+      slug: finalSlug,
+      tags: tags || [],
+      featuredImage,
+      published: published || false
     });
+
+    const populatedBlog = await Blog.findById(blog._id).populate('author', 'name email');
+
+    return NextResponse.json(populatedBlog, { status: 201 });
   } catch (error) {
-    console.error('Error updating orders:', error);
+    console.error('Error creating blog:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

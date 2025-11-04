@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/utils/database';
-import Order from '@/models/Order';
+import Comment from '@/models/Comment';
 import User from '@/models/User';
 import { getAdminUserFromRequest } from '@/utils/auth';
 
-// GET /api/admin/orders - Get all orders (Admin only)
+// GET /api/admin/comments - Get all comments (Admin only)
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
@@ -20,14 +20,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const orders = await Order.find({})
-      .populate('user', 'name email')
-      .populate('items.product', 'name price')
+    const comments = await Comment.find({})
+      .populate('author', 'name email')
+      .populate('blog', 'title slug')
+      .populate('parentComment', 'content')
       .sort({ createdAt: -1 });
 
-    return NextResponse.json(orders);
+    return NextResponse.json(comments);
   } catch (error) {
-    console.error('Error fetching orders:', error);
+    console.error('Error fetching comments:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PUT /api/admin/orders/bulk-status-update - Bulk update order status (Admin only)
+// PUT /api/admin/comments/bulk-approve - Bulk approve comments (Admin only)
 export async function PUT(request: NextRequest) {
   try {
     await connectToDatabase();
@@ -43,7 +44,6 @@ export async function PUT(request: NextRequest) {
     const userId = await getAdminUserFromRequest(request);
 
     // Check if user is admin
-    
     const adminUser = await User.findById(userId);
     if (!adminUser || adminUser.role !== 'admin') {
       return NextResponse.json(
@@ -52,35 +52,27 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { orderIds, status } = await request.json();
+    const { commentIds, approved } = await request.json();
 
     // Validate input
-    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+    if (!commentIds || !Array.isArray(commentIds) || commentIds.length === 0) {
       return NextResponse.json(
-        { error: 'Please provide orderIds array' },
+        { error: 'Please provide commentIds array' },
         { status: 400 }
       );
     }
 
-    if (!status || !['pending', 'processing', 'shipped', 'delivered', 'cancelled'].includes(status)) {
-      return NextResponse.json(
-        { error: 'Please provide valid status' },
-        { status: 400 }
-      );
-    }
-
-    // Update orders
-    const result = await Order.updateMany(
-      { _id: { $in: orderIds } },
-      { status, updatedAt: new Date() }
+    const result = await Comment.updateMany(
+      { _id: { $in: commentIds } },
+      { approved: approved || false, updatedAt: new Date() }
     );
 
     return NextResponse.json({
-      message: `Updated ${result.modifiedCount} orders`,
+      message: `Updated ${result.modifiedCount} comments`,
       modifiedCount: result.modifiedCount
     });
   } catch (error) {
-    console.error('Error updating orders:', error);
+    console.error('Error updating comments:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

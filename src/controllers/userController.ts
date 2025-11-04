@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '../utils/database';
 import User from '../models/User';
 import { setAuthCookie, generateToken, clearAuthCookie } from '../utils/auth';
+import * as jwt from 'jsonwebtoken';
 
 // POST /api/auth/register - Register a new user
 export async function register(request: NextRequest) {
@@ -159,9 +160,37 @@ export async function getProfile(request: NextRequest) {
     await connectToDatabase();
 
     // Get user from httpOnly cookie instead of Authorization header
-    const user = await User.findById(request.cookies.get('auth_token')?.value);
+    const token = request.cookies.get('auth_token')?.value;
+    console.log('Profile request - token present:', !!token);
+
+    if (!token) {
+      console.log('No auth token found in cookies');
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Verify JWT token to get user ID
+    const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: string };
+      console.log('JWT decoded successfully:', decoded);
+    } catch (jwtError) {
+      console.log('JWT verification failed:', jwtError);
+      return NextResponse.json(
+        { error: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+
+    const user = await User.findById(decoded.userId);
+    console.log('User lookup result:', user ? 'found' : 'not found');
 
     if (!user) {
+      console.log('User not found for userId:', decoded.userId);
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -176,6 +205,7 @@ export async function getProfile(request: NextRequest) {
       createdAt: user.createdAt
     };
 
+    console.log('Profile response for user:', user.email, 'role:', user.role);
     return NextResponse.json({ user: userResponse });
   } catch (error) {
     console.error('Profile error:', error);

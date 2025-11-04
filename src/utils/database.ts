@@ -18,7 +18,9 @@ if (!cached) {
 }
 
 async function connectToDatabase() {
+  console.log('[DEBUG] Attempting to connect to database...');
   if (cached.conn) {
+    console.log('[DEBUG] Using cached database connection');
     return cached.conn;
   }
 
@@ -31,14 +33,18 @@ async function connectToDatabase() {
       maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
     };
 
+    console.log('[DEBUG] Creating new database connection promise');
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log('[DEBUG] Database connection established successfully');
       return mongoose;
     });
   }
 
   try {
     cached.conn = await cached.promise;
+    console.log('[DEBUG] Database connection retrieved from promise');
   } catch (e) {
+    console.error('[DEBUG] Database connection failed:', e.message);
     cached.promise = null;
     throw e;
   }
