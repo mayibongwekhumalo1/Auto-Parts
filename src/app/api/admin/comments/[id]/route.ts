@@ -7,7 +7,7 @@ import { getAdminUserFromRequest } from '@/utils/auth';
 // GET /api/admin/comments/[id] - Get a specific comment (Admin only)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -49,7 +49,7 @@ export async function GET(
 // PUT /api/admin/comments/[id] - Update a comment (Admin only)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -113,7 +113,7 @@ export async function PUT(
 // DELETE /api/admin/comments/[id] - Delete a comment (Admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();

@@ -164,7 +164,7 @@ export default function RealtimeDashboard({ className = "" }: RealtimeDashboardP
             Recent Alerts
           </h3>
           <div className="space-y-3">
-            {dashboardData.alerts.slice(0, 5).map((alert: any) => (
+            {dashboardData.alerts.slice(0, 5).map((alert: DashboardData['alerts'][0]) => (
               <div
                 key={alert.id}
                 className={`p-3 rounded border-l-4 ${

@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type') || 'ai_recommendations';
     const context = searchParams.get('context'); // 'cart', 'viewed', 'purchased'
 
-    let recommendations: IProduct[] = [];
+    let recommendations: (IProduct & { score?: number })[] = [];
     const excludeIds = exclude ? exclude.split(',').filter(id => id) : [];
 
     if (type === 'ai_recommendations' && userId) {
@@ -49,7 +49,7 @@ async function getPersonalizedRecommendations(
   excludeIds: string[],
   limit: number,
   context?: string | null
-) {
+): Promise<(IProduct & { score?: number })[]> {
   try {
     // Get user's order history and preferences
     const user = await User.findById(userId);
@@ -60,7 +60,7 @@ async function getPersonalizedRecommendations(
     const purchasedBrands = new Set<string>();
     const purchasedProductIds = new Set<string>();
 
-    userOrders.forEach((order: any) => {
+    userOrders.forEach((order: { items: { productId?: IProduct }[] }) => {
       order.items.forEach((item: { productId?: IProduct }) => {
         if (item.productId) {
           purchasedCategories.add(item.productId.category);
@@ -76,7 +76,7 @@ async function getPersonalizedRecommendations(
     }
 
     // Build recommendation query
-    const query: Record<string, any> = {
+    const query: Record<string, unknown> = {
       _id: { $nin: [...excludeIds, ...Array.from(purchasedProductIds)] },
       stock: { $gt: 0 }
     };
@@ -87,7 +87,7 @@ async function getPersonalizedRecommendations(
       .lean();
 
     // Simple scoring algorithm
-    const scoredRecommendations = recommendations.map((product: IProduct) => {
+    const scoredRecommendations = recommendations.map((product) => {
       let score = 0;
 
       // Category match (high weight)
@@ -130,7 +130,7 @@ async function getPersonalizedRecommendations(
   }
 }
 
-async function getCategoryRecommendations(category: string, excludeIds: string[], limit: number) {
+async function getCategoryRecommendations(category: string, excludeIds: string[], limit: number): Promise<IProduct[]> {
   try {
     const recommendations = await Product.find({
       category: { $regex: category, $options: 'i' },
@@ -148,7 +148,7 @@ async function getCategoryRecommendations(category: string, excludeIds: string[]
   }
 }
 
-async function getTrendingRecommendations(excludeIds: string[], limit: number) {
+async function getTrendingRecommendations(excludeIds: string[], limit: number): Promise<IProduct[]> {
   try {
     // Get products with high ratings, featured status, or recent popularity
     const recommendations = await Product.find({

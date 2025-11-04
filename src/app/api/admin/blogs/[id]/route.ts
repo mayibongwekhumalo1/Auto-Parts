@@ -7,7 +7,7 @@ import { getAdminUserFromRequest } from '@/utils/auth';
 // GET /api/admin/blogs/[id] - Get a specific blog (Admin only)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -45,7 +45,7 @@ export async function GET(
 // PUT /api/admin/blogs/[id] - Update a blog (Admin only)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -129,7 +129,7 @@ export async function PUT(
 // DELETE /api/admin/blogs/[id] - Delete a blog (Admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();

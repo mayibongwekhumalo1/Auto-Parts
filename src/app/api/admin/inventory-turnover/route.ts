@@ -55,8 +55,8 @@ export async function GET(request: NextRequest) {
       .lean();
 
     // Calculate turnover metrics
-    const turnoverData = products.map((product: IProduct) => {
-      const sales = salesData.find(s => s._id.toString() === product._id.toString());
+    const turnoverData = products.map((product) => {
+      const sales = salesData.find(s => s._id.toString() === String(product._id));
       const unitsSold = sales?.totalSold || 0;
       const averageInventory = product.stock; // Simplified - could be more complex
       const costOfGoodsSold = unitsSold * (product.costPrice || product.price);

@@ -58,7 +58,8 @@ export default function PerformanceMonitor() {
     const fidObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       entries.forEach((entry) => {
-        setMetrics(prev => ({ ...prev, fid: (entry as any).processingStart - entry.startTime }));
+        const perfEntry = entry as PerformanceEventTiming;
+        setMetrics(prev => ({ ...prev, fid: perfEntry.processingStart - entry.startTime }));
       });
     });
 
@@ -73,8 +74,9 @@ export default function PerformanceMonitor() {
     const clsObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       entries.forEach((entry) => {
-        if (!(entry as any).hadRecentInput) {
-          clsValue += (entry as any).value;
+        const layoutShiftEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+        if (!layoutShiftEntry.hadRecentInput) {
+          clsValue += layoutShiftEntry.value || 0;
         }
       });
       setMetrics(prev => ({ ...prev, cls: clsValue }));
