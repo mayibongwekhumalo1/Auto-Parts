@@ -18,6 +18,42 @@ async function getUserFromToken(request: NextRequest) {
   return decoded.userId;
 }
 
+// GET /api/admin/products/[id] - Get single product (Admin only)
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    await connectToDatabase();
+
+    const userId = await getUserFromToken(request);
+
+    // Check if user is admin
+    const adminUser = await User.findById(userId);
+    if (!adminUser || adminUser.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const resolvedParams = await params;
+    const product = await Product.findById(resolvedParams.id);
+
+    if (!product) {
+      return NextResponse.json(
+        { error: 'Product not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(product);
+  } catch (error) {
+    console.error('Error fetching product:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 // PUT /api/admin/products/[id] - Update product (Admin only)
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

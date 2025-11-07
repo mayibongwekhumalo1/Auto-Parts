@@ -146,7 +146,9 @@ export default function AdminDashboard() {
    const [alerts, setAlerts] = useState<Array<{id: string; type: 'info' | 'warning' | 'error'; message: string; timestamp: Date}>>([]);
    const [showAlerts, setShowAlerts] = useState(false);
 
+  // Initial data load effect
   useEffect(() => {
+    console.log('AdminDashboard: useEffect triggered');
     checkAdminAccess();
     loadData();
   }, []);
@@ -156,6 +158,7 @@ export default function AdminDashboard() {
     if (!autoRefreshEnabled) return;
 
     const interval = setInterval(() => {
+      console.log('Auto-refresh: loading data');
       loadData();
       setLastRefresh(new Date());
     }, refreshInterval);
@@ -163,8 +166,14 @@ export default function AdminDashboard() {
     return () => clearInterval(interval);
   }, [autoRefreshEnabled, refreshInterval]);
 
+  // Save widget settings to localStorage
+  useEffect(() => {
+    saveWidgetSettings();
+  }, [widgetVisibility, autoRefreshEnabled, refreshInterval]);
+
   // Load widget settings from localStorage
   useEffect(() => {
+    console.log('Loading widget settings from localStorage');
     const savedSettings = localStorage.getItem('adminWidgetSettings');
     if (savedSettings) {
       try {
@@ -178,21 +187,7 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  // Save widget settings to localStorage
-  const saveWidgetSettings = useCallback(() => {
-    const settings = {
-      widgetVisibility,
-      autoRefreshEnabled,
-      refreshInterval
-    };
-    localStorage.setItem('adminWidgetSettings', JSON.stringify(settings));
-  }, [widgetVisibility, autoRefreshEnabled, refreshInterval]);
-
-  useEffect(() => {
-    saveWidgetSettings();
-  }, [saveWidgetSettings]);
-
-  const checkAdminAccess = async () => {
+  const checkAdminAccess = useCallback(async () => {
     try {
       console.log('Checking admin access...');
       const response = await fetch('/api/auth/profile');
@@ -216,10 +211,11 @@ export default function AdminDashboard() {
       console.log('Error checking admin access:', error);
       router.push('/login');
     }
-  };
+  }, [router]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
+      console.log('Loading admin data...');
       const [usersRes, ordersRes, productsRes, blogsRes, commentsRes, revenueRes, clvRes, stockRes, turnoverRes, reportsRes, monthlyRes] = await Promise.all([
         fetch('/api/admin/users'),
         fetch('/api/admin/orders'),
@@ -282,12 +278,24 @@ export default function AdminDashboard() {
 
       // Calculate insights data
       calculateInsights();
+      console.log('Admin data loaded successfully');
     } catch (error) {
+      console.log('Error loading admin data:', error);
       setError('Failed to load data');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Save widget settings to localStorage
+  const saveWidgetSettings = useCallback(() => {
+    const settings = {
+      widgetVisibility,
+      autoRefreshEnabled,
+      refreshInterval
+    };
+    localStorage.setItem('adminWidgetSettings', JSON.stringify(settings));
+  }, [widgetVisibility, autoRefreshEnabled, refreshInterval]);
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {

@@ -243,7 +243,7 @@ export default function BuyCarPage() {
 
         {/* Call to Action */}
         <section className="mt-12 bg-gradient-to-r from-red-600 to-red-700 rounded-lg p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">Can't Find What You're Looking For?</h2>
+          <h2 className="text-2xl font-bold mb-4">Can&apos;t Find What You&apos;re Looking For?</h2>
           <p className="text-white/90 mb-6 max-w-2xl mx-auto">
             Contact our sales team for personalized assistance in finding your dream car.
           </p>

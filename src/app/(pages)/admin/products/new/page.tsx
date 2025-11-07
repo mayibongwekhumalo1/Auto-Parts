@@ -1,9 +1,10 @@
 'use client';
-
+import { CldUploadWidget } from 'next-cloudinary';
+import type { CloudinaryUploadWidgetResults } from 'next-cloudinary';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CldUploadWidget } from 'next-cloudinary';
+import Image from 'next/image';
 import { ArrowLeft, Plus, Camera, Save, X } from 'lucide-react';
 
 export default function AddProductPage() {
@@ -21,6 +22,7 @@ export default function AddProductPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
   const router = useRouter();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -256,64 +258,55 @@ export default function AddProductPage() {
                     Product Images
                   </label>
                   <div className="space-y-4">
-                    {process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ? (
-                      <CldUploadWidget
-                        options={{
-                          cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-                          folder: 'auto_parts',
-                          resourceType: 'image'
-                        }}
-                        onSuccess={(result) => {
-                          const info = result?.info;
-                          if (typeof info === 'object' && info?.secure_url) {
+                    <CldUploadWidget
+                      uploadPreset="auto_parts_images"
+                      onUpload={(result: CloudinaryUploadWidgetResults) => {
+                        if (result?.event === 'success' && result?.info) {
+                          const info = result.info;
+                          if (typeof info === 'object' && info && 'secure_url' in info && typeof info.secure_url === 'string') {
                             setUploadedImages(prev => [...prev, info.secure_url]);
                           }
-                        }}
-                      >
-                        {({ open }) => (
+                        }
+                      }}
+                      onError={(error: unknown) => {
+                        console.error('Upload error:', error);
+                        setError('Failed to upload image');
+                      }}
+                    >
+                      {({ open, isLoading }) => (
+                        <button
+                          type="button"
+                          onClick={() => open()}
+                          disabled={isLoading}
+                          className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium flex items-center"
+                        >
+                          <Camera className="mr-2 w-4 h-4" />
+                          {isLoading ? 'Uploading...' : 'Upload Images'}
+                        </button>
+                      )}
+                    </CldUploadWidget>
+
+                    {/* Show uploaded images */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                      {uploadedImages.map((url, index) => (
+                        <div key={index} className="relative w-full h-24 border border-gray-600 rounded-lg overflow-hidden">
+                          <Image
+                            src={url}
+                            alt={`Product image ${index + 1}`}
+                            fill
+                            className="object-cover rounded-lg"
+                            sizes="(max-width: 768px) 50vw, 25vw"
+                          />
                           <button
                             type="button"
-                            onClick={() => open()}
-                            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium flex items-center"
+                            onClick={() => setUploadedImages(prev => prev.filter((_, i) => i !== index))}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors z-10"
                           >
-                            <Camera className="mr-2 w-4 h-4" />
-                            Upload Images
+                            <X className="w-3 h-3" />
                           </button>
-                        )}
-                      </CldUploadWidget>
-                    ) : (
-                      <div className="bg-yellow-900 border border-yellow-700 text-yellow-300 px-4 py-3 rounded-lg">
-                        <p className="text-sm">
-                          <strong>Cloudinary not configured:</strong> Image upload is disabled. Please set up your Cloudinary credentials in the environment variables.
-                        </p>
-                        <p className="text-xs mt-1">
-                          Required: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
-                        </p>
-                      </div>
-                    )}
-
-                    {uploadedImages.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {uploadedImages.map((url, index) => (
-                          <div key={index} className="relative">
-                            <img
-                              src={url}
-                              alt={`Product image ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg border border-gray-600"
-                              width={96}
-                              height={96}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setUploadedImages(prev => prev.filter((_, i) => i !== index))}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
